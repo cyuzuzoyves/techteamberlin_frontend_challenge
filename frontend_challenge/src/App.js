@@ -13,32 +13,34 @@ class App extends Component {
 
   //function fetch data
   fetchAllLauches() {
-    let launchArr = [
-      {
-        flight_number: 77,
-        mission_name: 'NY',
-        rocket_name: 'NY2323'
+    // fetching data from SpaceX API
+      fetch(`https://api.spacexdata.com/v3/launches?launch_year=2018&order=desc&limit=20`)
+        // We get the API response and receive data in JSON format...
+        .then(response => response.json())
+        
+        // ...then we push fetched data in our new array
+        .then(data => {
 
-      },
-      {
-        flight_number: 72,
-        mission_name: 'KGL',
-        rocket_name: '232323KGL'
+          let launchArr = []
 
-      },
-      {
-        flight_number: 12,
-        mission_name: 'UG',
-        rocket_name: 'dsadUG21'
+          data.map(launch => (
+            launchArr.push({
+              flight_number: launch.flight_number,
+              mission_name: launch.mission_name,
+              rocket_name: launch.rocket.rocket_name
+            })
+          ))
 
-      }
-    ]
+          // ...then we update the launches state from pushed data in our new array [lauchArr]
+          this.setState({
+            launches: launchArr,
+            isLoading: false,
+          })
+        }
 
-    this.setState({
-      launches: launchArr,
-      isLoading: false,
-    })
-    
+        )
+        // Catch any errors we hit and update the app
+        .catch(error => this.setState({ error, isLoading: false }));
   }
 
   componentDidMount() {
