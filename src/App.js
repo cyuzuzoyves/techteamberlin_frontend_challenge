@@ -14,15 +14,12 @@ class App extends Component {
   //function fetch data
   fetchAllLauches() {
     // fetching data from SpaceX API
-      fetch(`https://api.spacexdata.com/v3/launches?launch_year=2018&order=desc&limit=20`)
+      fetch(`https://api.spacexdata.com/v3/launches?limit=20&launch_year=2018&order=desc`)
         // We get the API response and receive data in JSON format...
         .then(response => response.json())
-        
         // ...then we push fetched data in our new array
         .then(data => {
-
           let launchArr = []
-
           data.map(launch => (
             launchArr.push({
               flight_number: launch.flight_number,
@@ -30,16 +27,13 @@ class App extends Component {
               rocket_name: launch.rocket.rocket_name
             })
           ))
-
-          // ...then we update the launches state from pushed data in our new array [lauchArr]
+          //... then we update the launches state from pushed data in our new array [lauchArr]
           this.setState({
             launches: launchArr,
             isLoading: false,
           })
-        }
-
-        )
-        // Catch any errors we hit and update the app
+        })
+        //Catch any errors
         .catch(error => this.setState({ error, isLoading: false }));
   }
 
@@ -49,29 +43,28 @@ class App extends Component {
 
   render() {
     const { isLoading, launches, error } = this.state;
+    const options = {
+        defaultSortName: 'flight_number',
+        defaultSortOrder: 'asc'
+      };
     return (
       <div className="App">
-      <h3>Frontend React Coding Challenge - Yves CYUZUZO</h3>
-
+        <h3>Frontend React Coding Challenge - Yves CYUZUZO</h3>
         <h2>SpaceX 20 Latest launches</h2>
-
         {error ? <p>{error.message}</p> : null}
-
         <div className="container">
           {!isLoading ? (
-
-            <BootstrapTable data={launches} striped={true} hover={true} search searchPlaceholder={"Search mission name"}>
-                  <TableHeaderColumn dataField="flight_number" isKey={true} dataAlign="center" dataSort={true} searchable={false}>Flight number</TableHeaderColumn>
-                  <TableHeaderColumn dataField="mission_name"  dataSort={true}>mission name</TableHeaderColumn>
+            <BootstrapTable data={launches} striped={true} hover={true} search searchPlaceholder="Search mission name" options={options}>
+                  <TableHeaderColumn dataField="flight_number" isKey={true} dataAlign="center" dataSort  searchable={false}>Flight number</TableHeaderColumn>
+                  <TableHeaderColumn dataField="mission_name"  dataSort>mission name</TableHeaderColumn>
                   <TableHeaderColumn dataField= "rocket_name" searchable={false}>rocket name</TableHeaderColumn>
-              </BootstrapTable>
-            ): (
-              <h4>Loading...</h4>
-            )
-          }
+            </BootstrapTable>
+          ): (
+            <h4>Loading...</h4>
+          )}
         </div>
       </div>
-    );
+    )
   }
 }
 
