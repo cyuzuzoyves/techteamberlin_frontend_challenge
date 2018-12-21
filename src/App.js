@@ -4,6 +4,7 @@ import {fetchAllLauches} from './modules/action.js';
 import { connect } from 'react-redux';
 //import 'bootstrap/dist/css/bootstrap.min.css';
 import { Table, Pagination, Pager} from 'react-bootstrap';
+import '@fortawesome/fontawesome-free/css/all.min.css';
 
 
 class App extends Component {
@@ -12,10 +13,14 @@ class App extends Component {
     this.state = {
       sortDirection: 'ascending',
       currentPage: 1,
-      maxLenghtPerPage: 5,
+      maxLenghtPerPage: 4,
       currentPageData: [],
       pageNumbers:[],
-      pagination: true
+      pagination: true,
+      value: '',
+      flightNumberSort: true,
+      missionNameSort: false,
+      UP: true
     };
     props.dispatch(fetchAllLauches());
     this.onPageData = this.onPageData.bind(this);
@@ -48,69 +53,121 @@ class App extends Component {
         currentPageData: currentLaunches,
         pageNumbers: allpages,
         pagination: true,
-        currentPage: currentPage
+        currentPage: currentPage,
+        value:''
       });
-
-      //console.log(this.state.currentPage)
     }
+
+  }
+
+  //search value from URL function
+
+  onUrlSearch(searchData){
+    var allLauches = this.props.launches;
+    var newurl = [];
+    var searchaVal = [];
+    searchaVal = allLauches.filter(lauch => lauch.mission_name.includes(searchData));
+    this.onPageData(this.state.currentPage, searchaVal);
+    this.setState({
+      currentPageData: searchaVal,
+      pagination: false,
+      value:searchData
+    });
+
+    newurl = window.location.protocol + '//' + window.location.host+'/search='+searchData+'/';
+    window.history.pushState({path:newurl}, '', newurl);
 
   }
 
   //search function
   onSearch(event) {
+    var allLauches = this.props.launches;
+    var newurl = [];
+    var searchaVal = [];
     if(event.target.value!==''){
-      var allLauches = this.props.launches;
-      var searchaVal = allLauches.filter(lauch => lauch.mission_name.includes(event.target.value));
-      this.onPageData(1, searchaVal);
+      allLauches = this.props.launches;
+      searchaVal = allLauches.filter(lauch => lauch.mission_name.includes(event.target.value));
+      this.onPageData(this.state.currentPage, searchaVal);
       this.setState({
         currentPageData: searchaVal,
-        pagination: false
+        pagination: false,
+        value: event.target.value
       });
+
+      newurl = window.location.protocol + '//' + window.location.host+'/search='+event.target.value+'/';
+      window.history.pushState({path:newurl}, '', newurl);
     }
     else{
-      this.onPageData(1);
+      this.onPageData(this.state.currentPage);
+      newurl = window.location.protocol + '//' + window.location.host+'/#/pagination/'+this.state.currentPage ;
+      window.history.pushState({path:newurl}, '', newurl);
     }    
   }
 
   //fuction to move on different page
   handleClick(event, pageNumber) {
     this.onPageData(pageNumber);
+
   }
 
+  //sort function
   onSort(event, sortKey){
+    
     var sorted = this.state.currentPageData;
     if(this.state.sortDirection ==='descending') {
       sorted.sort((a, b) => b[sortKey].localeCompare(a[sortKey]));
       this.setState({ 
         sortDirection: 'ascending',
-        currentPageData: sorted
+        currentPageData: sorted,
+        UP: true
       });
     }else{
       sorted.sort((a, b) => b[sortKey].localeCompare(a[sortKey])).reverse();
       this.setState({ 
         sortDirection: 'descending',
-        currentPageData: sorted
+        currentPageData: sorted,
+        UP: false
       });
+    }
+    if(sortKey == 'flight_number'){
+      this.setState({ 
+        flightNumberSort: true,
+        missionNameSort: false
+      })
+
+    }
+    else{
+      this.setState({ 
+        flightNumberSort: false,
+        missionNameSort: true
+      })
+
     }
   }
 
   componentDidUpdate(prevProps, prevState) {
     if(prevProps.launches !== this.props.launches){
-      var currentLocation = window.location.hash; 
-      if(!currentLocation){
-        this.onPageData(this.state.currentPage);
+      var currentLocation = window.location.href; 
+      var urlArray = currentLocation.split('/');
+      const searchText = urlArray[3];
+      const paginationId = urlArray[urlArray.length-1];
+      
+      if(urlArray.length===7 || urlArray.length===6) {
+        this.onPageData(paginationId);
+      }
+      else if(urlArray.length===5){
+        var lastSegmentInSearch = searchText.split('=');
+        this.onUrlSearch(lastSegmentInSearch[1]);
       }
       else{
-        var urlArray = currentLocation.split('/');
-        const lastsegment = urlArray[urlArray.length-1];
-        this.onPageData(lastsegment);
+        this.onPageData(this.state.currentPage);
       }
-      console.log(this.state.currentPage)
     }
   }
 
   render() {
     const { isLoading, error } = this.props;
+    const {flightNumberSort, missionNameSort, UP} = this.state;
     
     return (
       <div className='App'>
@@ -125,6 +182,7 @@ class App extends Component {
                 <input
                   style={{border: "1px solid"}}
                   type="text"
+                  value={this.state.value}
                   placeholder="Search mission name"
                   onChange={ this.onSearch.bind(this) }
                 />
@@ -133,8 +191,8 @@ class App extends Component {
               <Table striped bordered hover>
                 <thead>
                   <tr>
-                    <th onClick = { e => this.onSort(e, 'flight_number') }>Flight number</th>
-                    <th onClick = { e => this.onSort(e, 'mission_name') }>mission name</th>
+                    <th onClick = { e => this.onSort(e, 'flight_number') }>{flightNumberSort && <i className={`fa fa-long-arrow-alt-${UP ? 'up':'down'}`}/>} Flight number</th>
+                    <th  onClick = { e => this.onSort(e, 'mission_name') }>{missionNameSort && <i className={`fa fa-long-arrow-alt-${UP ? 'up':'down'}`}/>} mission name</th>
                     <th >rocket name</th>
                   </tr>
                 </thead>
