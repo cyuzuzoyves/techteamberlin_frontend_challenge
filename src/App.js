@@ -18,6 +18,7 @@ class App extends Component {
       pagination: true
     };
     props.dispatch(fetchAllLauches());
+    this.onPageData = this.onPageData.bind(this);
   }
 
   // Function to get current data on page and page numbers
@@ -46,14 +47,17 @@ class App extends Component {
       this.setState({ 
         currentPageData: currentLaunches,
         pageNumbers: allpages,
-        pagination: true
+        pagination: true,
+        currentPage: currentPage
       });
+
+      //console.log(this.state.currentPage)
     }
 
   }
 
-  onChangeVal(event) {
-    
+  //search function
+  onSearch(event) {
     if(event.target.value!==''){
       var allLauches = this.props.launches;
       var searchaVal = allLauches.filter(lauch => lauch.mission_name.includes(event.target.value));
@@ -65,26 +69,45 @@ class App extends Component {
     }
     else{
       this.onPageData(1);
-
-    }
-        
+    }    
   }
 
   //fuction to move on different page
-  handleClick(event, pagenumberr) {
-    this.setState({
-      currentPage: pagenumberr
-    });
-    this.onPageData(pagenumberr);
+  handleClick(event, pageNumber) {
+    this.onPageData(pageNumber);
+  }
+
+  onSort(event, sortKey){
+    var sorted = this.state.currentPageData;
+    if(this.state.sortDirection ==='descending') {
+      sorted.sort((a, b) => b[sortKey].localeCompare(a[sortKey]));
+      this.setState({ 
+        sortDirection: 'ascending',
+        currentPageData: sorted
+      });
+    }else{
+      sorted.sort((a, b) => b[sortKey].localeCompare(a[sortKey])).reverse();
+      this.setState({ 
+        sortDirection: 'descending',
+        currentPageData: sorted
+      });
+    }
   }
 
   componentDidUpdate(prevProps, prevState) {
     if(prevProps.launches !== this.props.launches){
-      this.onPageData(this.state.currentPage);
+      var currentLocation = window.location.hash; 
+      if(!currentLocation){
+        this.onPageData(this.state.currentPage);
+      }
+      else{
+        var urlArray = currentLocation.split('/');
+        const lastsegment = urlArray[urlArray.length-1];
+        this.onPageData(lastsegment);
+      }
+      console.log(this.state.currentPage)
     }
   }
-  
-  
 
   render() {
     const { isLoading, error } = this.props;
@@ -97,18 +120,21 @@ class App extends Component {
         <div className='container'>
           {!isLoading ?
             <div>
-              <div >
+
+              <div style={{paddingBottom:"10px", float: "right"}}>
                 <input
+                  style={{border: "1px solid"}}
                   type="text"
                   placeholder="Search mission name"
-                  onChange={ this.onChangeVal.bind(this) }
+                  onChange={ this.onSearch.bind(this) }
                 />
               </div>
+
               <Table striped bordered hover>
                 <thead>
                   <tr>
-                    <th>Flight number</th>
-                    <th>mission name</th>
+                    <th onClick = { e => this.onSort(e, 'flight_number') }>Flight number</th>
+                    <th onClick = { e => this.onSort(e, 'mission_name') }>mission name</th>
                     <th >rocket name</th>
                   </tr>
                 </thead>
@@ -124,6 +150,7 @@ class App extends Component {
                   })}
                 </tbody>
               </Table>
+
               {this.state.pagination && (
                 <div>
                   <Pager>
@@ -133,8 +160,8 @@ class App extends Component {
                           key={ number }
                           id={ number }
                           onClick={ e => this.handleClick(e, number) }
-                          href={ '#/pagenumber/'+number }
-                          active= { number === this.state.currentPage }
+                          href={ '#/pagination/'+number }
+                          active= { number == this.state.currentPage }
                         >
                           {number}
                         </Pagination.Item>
@@ -143,6 +170,7 @@ class App extends Component {
                   </Pager>
                 </div>
               )}
+
             </div>
                
             : <h4>Loading...</h4>
